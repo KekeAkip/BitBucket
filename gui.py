@@ -3,6 +3,7 @@ from tkinter import ttk, messagebox
 from tkcalendar import DateEntry
 from controller import AppController
 from datetime import date
+import re
 
 class ExpenseApp(tk.Tk):
     def __init__(self, controller: AppController):
@@ -24,9 +25,16 @@ class ExpenseApp(tk.Tk):
 
         # 金额
         ttk.Label(frame, text="金额").grid(row=0, column=0, sticky="e")
-        self.amount_var = tk.DoubleVar()
-        ttk.Entry(frame, textvariable=self.amount_var, width=15).grid(row=0, column=1)
+        self.amount_var = tk.StringVar()
+        # 注册校验回调；%P 代表“变更后预期写入控件的新文本”
+        vcmd = (self.register(self._validate_amount), "%P")
 
+        ttk.Entry(frame,
+                textvariable=self.amount_var,
+                validate="key",
+                validatecommand=vcmd,
+                width=15).grid(row=0, column=1)
+        
         # 币种
         ttk.Label(frame, text="币种").grid(row=0, column=2, sticky="e")
         self.currency_var = tk.StringVar()
@@ -102,7 +110,7 @@ class ExpenseApp(tk.Tk):
         """处理添加账目按钮逻辑"""
         try:
             new_id = self.controller.add_expense(
-                amount=self.amount_var.get(),
+                amount=float(self.amount_var.get()) if self.amount_var.get() else 0.0,
                 currency=self.currency_var.get(),
                 category=self.category_var.get(),
                 note=self.note_var.get(),
@@ -112,10 +120,27 @@ class ExpenseApp(tk.Tk):
             self._refresh_table()
             self._clear_form()
             # 选中新写入的那一行
-            self.tree.selection_set(new_id)
+            if new_id:
+                try:
+                    self.tree.selection_set(new_id)
+                except tk.TclError:
+                    pass   # 忽略极少见的 “items not found”
+
             messagebox.showinfo("成功", "账目已添加并保存！")
         except Exception as e:
             messagebox.showerror("错误", str(e))
+            
+    def _validate_amount(self, new_value: str) -> bool:
+        """
+        仅允许：
+        1) 空字符串（方便删改）
+        2) 整数
+        3) 小数，且小数点后最多两位
+        """
+        if new_value == "":
+            return True
+        return re.fullmatch(r"\d+(\.\d{0,2})?", new_value) is not None
+
 
     def _update_expense(self):
         """处理更新账目按钮逻辑"""
@@ -125,7 +150,7 @@ class ExpenseApp(tk.Tk):
         try:
             self.controller.update_expense(
                 expense_id=self.selected_id,
-                amount=self.amount_var.get(),
+                amount=float(self.amount_var.get()) if self.amount_var.get() else 0.0,
                 currency=self.currency_var.get(),
                 category=self.category_var.get(),
                 note=self.note_var.get(),
@@ -159,7 +184,7 @@ class ExpenseApp(tk.Tk):
         
     def _clear_form(self):
         """清空表单输入"""
-        self.amount_var.set(0.0)
+        self.amount_var.set("")
         self.currency_var.set("")
         self.category_var.set("")
         self.note_var.set("")

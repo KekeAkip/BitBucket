@@ -15,7 +15,7 @@ class AppController:
         note: str,
         location: str,
         date_value: date = date.today()   # 可选：默认使用今天
-    ) -> None:
+    ) -> str:
         """添加一条新的支出记录"""
         expense = Expense(
             date=date_value,
@@ -27,6 +27,7 @@ class AppController:
         )
         self.store.add(expense)
         self.store.save()
+        return expense.id  # 返回新账目的 ID
 
     def get_expenses(self) -> list[Expense]:
         """获取所有账目列表"""
