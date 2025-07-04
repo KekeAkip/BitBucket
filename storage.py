@@ -17,6 +17,7 @@ class DataStore:
                 data = json.load(f)
                 self.expenses = [
                     Expense(
+                        id = e["id"],
                         date=datetime.strptime(e["date"], "%Y-%m-%d").date(),
                         amount=e["amount"],
                         currency=e["currency"],
@@ -32,6 +33,7 @@ class DataStore:
         with open(self.path, "w", encoding="utf-8") as f:
             json.dump([
                 {
+                    "id": e.id,
                     "date": e.date.isoformat(),
                     "amount": e.amount,
                     "currency": e.currency,
@@ -63,3 +65,19 @@ class DataStore:
                     e.note,
                     e.location
                 ])
+
+    def delete(self, expense_id: str) -> bool:
+        # 根据 ID 删除一条账目记录
+        for i, e in enumerate(self.expenses):
+            if e.id == expense_id:
+                del self.expenses[i]
+                return True
+        return False
+    
+    def update(self, expense_id: str, new_expense: Expense) -> bool:
+        # 根据 ID 更新一条账目记录
+        for i, e in enumerate(self.expenses):
+            if e.id == expense_id:
+                self.expenses[i] = new_expense
+                return True
+        return False
