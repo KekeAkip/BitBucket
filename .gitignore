@@ -1,4 +1,18 @@
-.venv/
+# Python 编译缓存
 __pycache__/
+*.py[cod]
+
+# 虚拟环境
+.venv/
+
+# 编辑器/IDE 文件
+.vscode/
+.idea/
+
+# 输出文件
+*.csv
+*.json
+
+# 账单文件
 expenses.csv
 expenses.json
