@@ -4,6 +4,7 @@ from tkcalendar import DateEntry
 from controller import AppController
 from datetime import date
 import re
+import datetime
 
 class ExpenseApp(tk.Tk):
     def __init__(self, controller: AppController):
@@ -14,6 +15,8 @@ class ExpenseApp(tk.Tk):
         
         self.selected_id: str | None = None     # 当前选中的记录 ID
 
+        self.sort_reverse: dict[str, bool] = {}   # 记录每列当前是否倒序
+        
         self._build_form()
         self._build_table()
         self._refresh_table()
@@ -69,16 +72,19 @@ class ExpenseApp(tk.Tk):
         ttk.Button(frame, text="导出 CSV", command=self._export_csv).grid(row=3, column=3, pady=10)
 
     def _build_table(self):
-        """构建账目展示表格"""
+        """构建账目列表表格"""
         columns = ["日期", "金额", "币种", "分类", "备注", "地点"]
         self.tree = ttk.Treeview(self, columns=columns, show="headings", selectmode="browse")
-        for col in columns:
-            self.tree.heading(col, text=col)
-            self.tree.column(col, anchor="center")
-        self.tree.pack(fill="both", expand=True, padx=10, pady=10)
 
-        # 绑定选择事件：点击某行回填表单
+        for col in columns:
+            self.tree.heading(col, text=col,
+                            command=lambda c=col: self._sort_by(c))
+            # 根据需要调宽
+            self.tree.column(col, anchor="center", width=100)
+
+        self.tree.pack(fill="both", expand=True, padx=10, pady=10)
         self.tree.bind("<<TreeviewSelect>>", self._on_row_select)
+
 
     def _refresh_table(self):
         """刷新表格数据"""
@@ -89,6 +95,45 @@ class ExpenseApp(tk.Tk):
                 e.date.isoformat(), e.amount, e.currency,
                 e.category, e.note, e.location
             ))
+            
+    def _sort_by(self, col_name: str):
+        """根据列名对 Treeview 中的记录升/降序排序"""
+        # 获取当前列的排序方向（默认为升序 False）
+        reverse = self.sort_reverse.get(col_name, False)
+
+        # 1. 把所有行的信息拿下来
+        items = []
+        for iid in self.tree.get_children():
+            values = self.tree.item(iid)["values"]
+            items.append((iid, values))
+
+        # 2. 根据列名决定 Key 如何解析
+        col_index = {
+            "日期": 0,
+            "金额": 1,
+            "币种": 2,
+            "分类": 3,
+            "备注": 4,
+            "地点": 5
+        }[col_name]
+
+        def parse_key(values):
+            val = values[col_index]
+            if col_name == "日期":
+                return datetime.datetime.strptime(val, "%Y-%m-%d")
+            if col_name == "金额":
+                return float(val)
+            return val  # 其它列按字符串比较
+
+        # 3. 排序
+        items.sort(key=lambda tup: parse_key(tup[1]), reverse=reverse)
+
+        # 4. 重新按排序后的顺序放回 Treeview
+        for index, (iid, _) in enumerate(items):
+            self.tree.move(iid, "", index)
+
+        # 5. 切换该列方向
+        self.sort_reverse[col_name] = not reverse
     
     def _on_row_select(self, _event):
         """处理行选择事件，回填表单"""
