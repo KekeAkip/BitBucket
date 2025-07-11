@@ -69,3 +69,17 @@ class AppController:
         if removed:
             self.store.save()
         return removed
+    
+    def get_total_rmb(self) -> float:
+        """返回全部支出折合人民币的总额"""
+        rates = {
+            "CNY": 1.0,
+            "JPY": 0.045,   # 例：1 JPY ≈ 0.045 RMB
+            "GBP": 9.2      # 例：1 GBP ≈ 9.2 RMB
+        }
+
+        total = 0.0
+        for e in self.store.list():
+            rate = rates.get(e.currency.upper(), 1.0)
+            total += e.amount * rate
+        return total

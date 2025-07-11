@@ -70,6 +70,10 @@ class ExpenseApp(tk.Tk):
         ttk.Button(frame, text="更新记录", command=self._update_expense).grid(row=3, column=1, pady=10)
         ttk.Button(frame, text="删除记录", command=self._delete_expense).grid(row=3, column=2, pady=10)
         ttk.Button(frame, text="导出 CSV", command=self._export_csv).grid(row=3, column=3, pady=10)
+        
+        # 计算总支出按钮
+        ttk.Button(self, text="计算总支出（RMB）", command=self._show_total_rmb).pack(pady=5)
+
 
     def _build_table(self):
         """构建账目列表表格"""
@@ -235,3 +239,7 @@ class ExpenseApp(tk.Tk):
         self.note_var.set("")
         self.location_var.set("")
         self.date_entry.set_date(date.today())
+        
+    def _show_total_rmb(self):
+        total = self.controller.get_total_rmb()
+        messagebox.showinfo("总支出", f"全部消费折合人民币约为：¥{total:.2f}")
